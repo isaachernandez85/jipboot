@@ -63,7 +63,7 @@ TWILIO_ACCOUNT_SID             = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN              = os.getenv("TWILIO_AUTH_TOKEN", "")
 TWILIO_WHATSAPP_SANDBOX_NUMBER = os.getenv(
     "TWILIO_WHATSAPP_SANDBOX_NUMBER",
-    "whatsapp:+14791186687" 
+    "whatsapp:+524791186687" 
 )
 
 # --------------------------------------------------
