@@ -23,7 +23,7 @@ class WhatsAppService:
         # El número de sandbox de Twilio debe incluir el prefijo "whatsapp:"
         self.from_number = os.getenv(
             "TWILIO_WHATSAPP_SANDBOX_NUMBER",
-            "whatsapp:+524791186687"
+            "whatsapp:+5214791186687"
         )
 
         if not all([self.account_sid, self.auth_token]):
