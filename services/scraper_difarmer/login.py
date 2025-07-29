@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 USERNAME = "C20118"
 PASSWORD = "7913"
 BASE_URL = "https://www.difarmer.com"
-LOGIN_TIMEOUT_SECONDS = 90      # Timeout global para cada intento
-MAX_LOGIN_ATTEMPTS = 3          # Número de reintentos
-VALIDATION_BUTTON_TIMEOUT = 45  # Tiempo máximo para esperar el botón "Validando..."
+LOGIN_TIMEOUT_SECONDS = 45      # Timeout global para cada intento
+MAX_LOGIN_ATTEMPTS = 2          # Número de reintentos
+VALIDATION_BUTTON_TIMEOUT = 20  # Tiempo máximo para esperar el botón "Validando..."
 
 def inicializar_navegador(headless=True):
     """
