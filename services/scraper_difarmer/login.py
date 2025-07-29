@@ -30,15 +30,21 @@ VALIDATION_BUTTON_TIMEOUT = 30  # Tiempo máximo para esperar el botón "Validan
 
 def inicializar_navegador(headless=True):
     """
-    Inicializa el navegador Chrome con todas tus opciones originales, pero usando undetected-chromedriver.
+    ✅ FUNCIÓN MEJORADA: Inicializa el navegador con opciones para parecer más humano en Cloud Run.
     """
-    # ✅ CAMBIO: Usamos las opciones de uc
     options = uc.ChromeOptions()
     
     # Se mantienen TODAS tus opciones de configuración originales para robustez
     if headless:
+        # Nota: uc.Chrome(headless=True) maneja esto, pero añadirlo explícitamente no daña.
         options.add_argument("--headless=new")
     
+    # ✅ NUEVO: Opciones para "disfrazar" mejor el navegador en un entorno de servidor
+    # Usamos un User-Agent común de un navegador de escritorio en Windows
+    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36')
+    # Especificamos el idioma para parecer un usuario real
+    options.add_argument('--lang=es-ES')
+
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -58,9 +64,8 @@ def inicializar_navegador(headless=True):
     options.add_argument("--disable-software-rasterizer")
     
     try:
-        # ✅ CAMBIO: Inicializamos uc.Chrome, que maneja el driver automáticamente.
-        # Ya no necesitamos webdriver-manager ni la lógica de fallback.
-        logger.info("===== Inicializando con Undetected Chromedriver =====")
+        logger.info("===== Inicializando con Undetected Chromedriver (Configuración Avanzada) =====")
+        # Pasamos `headless=True` directamente a uc.Chrome, es la forma recomendada.
         driver = uc.Chrome(options=options, headless=headless)
         logger.info("Navegador (undetected) inicializado correctamente.")
         return driver
