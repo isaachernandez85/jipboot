@@ -24,26 +24,28 @@ logger = logging.getLogger(__name__)
 USERNAME = "C20118"
 PASSWORD = "7913"
 BASE_URL = "https://www.difarmer.com"
-LOGIN_TIMEOUT_SECONDS = 45      # Timeout global para cada intento
-MAX_LOGIN_ATTEMPTS = 2          # Número de reintentos
-VALIDATION_BUTTON_TIMEOUT = 20  # Tiempo máximo para esperar el botón "Validando..."
+LOGIN_TIMEOUT_SECONDS = 90      # Timeout global para cada intento
+MAX_LOGIN_ATTEMPTS = 3          # Número de reintentos
+VALIDATION_BUTTON_TIMEOUT = 45  # Tiempo máximo para esperar el botón "Validando..."
 
 def inicializar_navegador(headless=True):
     """
-    ✅ FUNCIÓN MEJORADA: Inicializa el navegador con opciones para parecer más humano en Cloud Run.
+    ✅ FUNCIÓN MEJORADA: Inicializa el navegador con una configuración headless simplificada para el servidor.
     """
     options = uc.ChromeOptions()
     
+    # ✅ CAMBIO APLICADO: Simplificamos el bloque headless para probar un perfil más limpio.
     if headless:
+        # Dejamos solo las opciones más importantes y probadas para entornos de servidor.
+        # Un perfil más simple puede ser menos sospechoso.
         options.add_argument("--headless=new")
+        options.add_argument('--no-sandbox')
         options.add_argument('--disable-gpu')
-        options.add_argument('--no-zygote')
-        options.add_argument('--single-process')
+        options.add_argument('--disable-dev-shm-usage')
     
+    # Se mantienen el resto de tus opciones de configuración para robustez
     options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36')
     options.add_argument('--lang=es-ES')
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-popup-blocking")
@@ -60,7 +62,8 @@ def inicializar_navegador(headless=True):
     options.add_argument("--disable-software-rasterizer")
     
     try:
-        logger.info("===== Inicializando con Undetected Chromedriver (Configuración Avanzada) =====")
+        logger.info("===== Inicializando con Undetected Chromedriver (Configuración Simplificada para Servidor) =====")
+        # Pasamos headless=True para que uc.Chrome sepa el modo, pero las opciones ya están configuradas.
         driver = uc.Chrome(options=options, headless=headless)
         logger.info("Navegador (undetected) inicializado correctamente.")
         return driver
