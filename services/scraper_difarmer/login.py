@@ -26,7 +26,7 @@ PASSWORD = "7913"
 BASE_URL = "https://www.difarmer.com"
 LOGIN_TIMEOUT_SECONDS = 90      # Timeout global para cada intento
 MAX_LOGIN_ATTEMPTS = 3          # Número de reintentos
-VALIDATION_BUTTON_TIMEOUT = 30  # Tiempo máximo para esperar el botón "Validando..."
+VALIDATION_BUTTON_TIMEOUT = 45  # Tiempo máximo para esperar el botón "Validando..."
 
 def inicializar_navegador(headless=True):
     """
@@ -34,20 +34,16 @@ def inicializar_navegador(headless=True):
     """
     options = uc.ChromeOptions()
     
-    # Se mantienen TODAS tus opciones de configuración originales para robustez
     if headless:
-        # Nota: uc.Chrome(headless=True) maneja esto, pero añadirlo explícitamente no daña.
         options.add_argument("--headless=new")
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-zygote')
+        options.add_argument('--single-process')
     
-    # ✅ NUEVO: Opciones para "disfrazar" mejor el navegador en un entorno de servidor
-    # Usamos un User-Agent común de un navegador de escritorio en Windows
     options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36')
-    # Especificamos el idioma para parecer un usuario real
     options.add_argument('--lang=es-ES')
-
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-popup-blocking")
@@ -65,7 +61,6 @@ def inicializar_navegador(headless=True):
     
     try:
         logger.info("===== Inicializando con Undetected Chromedriver (Configuración Avanzada) =====")
-        # Pasamos `headless=True` directamente a uc.Chrome, es la forma recomendada.
         driver = uc.Chrome(options=options, headless=headless)
         logger.info("Navegador (undetected) inicializado correctamente.")
         return driver
@@ -89,12 +84,9 @@ def login_difarmer(headless=True):
                 logger.error("No se pudo inicializar el navegador. Reintentando...")
                 continue
 
-            # 1. Navegar a la página principal
-            logger.info(f"Navegando a: {BASE_URL}")
             driver.get(BASE_URL)
             time.sleep(3)
 
-            # 2. ✅ RESTAURADO: Tu lógica original y robusta para encontrar el botón "Iniciar Sesion"
             logger.info("Buscando botón 'Iniciar Sesion'...")
             login_button = None
             xpaths_login = [
@@ -128,7 +120,6 @@ def login_difarmer(headless=True):
             else:
                 raise Exception("No se encontró el botón principal de 'Iniciar Sesion'")
 
-            # 3. ✅ RESTAURADO: Tu lógica original y robusta para encontrar los campos de credenciales
             logger.info("Buscando y rellenando credenciales...")
             usuario_input = None
             username_selectors = [
@@ -166,19 +157,23 @@ def login_difarmer(headless=True):
             password_input.send_keys(PASSWORD)
             logger.info("Credenciales ingresadas.")
 
-            # 4. ✅ CAMBIO CLAVE: Reemplazamos la búsqueda del botón de envío por la espera inteligente
-            logger.info(f"Esperando hasta {VALIDATION_BUTTON_TIMEOUT}s a que el botón de validación se active...")
+            # ✅ CAMBIO CLAVE: Ahora esperamos a que el texto "Siguiente" aparezca en el botón.
+            logger.info(f"Esperando hasta {VALIDATION_BUTTON_TIMEOUT}s a que el botón cambie a 'Siguiente'...")
             validation_button_xpath = "//button[contains(., 'Validando identidad...') or contains(., 'Siguiente')]"
             
             wait = WebDriverWait(driver, VALIDATION_BUTTON_TIMEOUT)
-            siguiente_button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, validation_button_xpath))
+            
+            # Esta es la nueva condición, mucho más precisa.
+            wait.until(
+                EC.text_to_be_present_in_element((By.XPATH, validation_button_xpath), 'Siguiente')
             )
-            logger.info("✅ Botón de validación activado. Procediendo con el clic.")
+            
+            # Una vez que el texto aparece, encontramos el botón y hacemos clic.
+            siguiente_button = driver.find_element(By.XPATH, validation_button_xpath)
+            logger.info("✅ Botón 'Siguiente' encontrado. Procediendo con el clic.")
             siguiente_button.click()
             time.sleep(7)
 
-            # 5. ✅ RESTAURADO: Tu lógica original para verificar el éxito del login
             logger.info("Verificando el resultado del login...")
             page_source_lower = driver.page_source.lower()
             success_indicators = [
