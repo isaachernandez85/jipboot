@@ -1,210 +1,316 @@
 """
-Módulo de login para Difarmer, versión final y robusta.
-- Conserva la lógica original de selectores múltiples y opciones de navegador.
-- Utiliza undetected-chromedriver para evitar la detección de bots.
-- Implementa espera explícita para el nuevo botón de validación de identidad.
-- Optimizado para entornos de Cloud Run (headless).
+Módulo de login para Difarmer - Versión mejorada anti-detección
+Optimizado para Google Cloud Run con técnicas avanzadas de evasión
 """
 import time
 import logging
-# ✅ CAMBIOS: Importaciones actualizadas para la solución
+import random
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+import pyautogui  # Para simular movimientos más realistas
+pyautogui.FAILSAFE = False
 
-# Configurar logging (se mantiene tu configuración original)
+# Configurar logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Configuración (se mantiene tu configuración original)
+# Configuración
 USERNAME = "C20118"
 PASSWORD = "7913"
 BASE_URL = "https://www.difarmer.com"
-LOGIN_TIMEOUT_SECONDS = 90      # Timeout global para cada intento
-MAX_LOGIN_ATTEMPTS = 3          # Número de reintentos
-VALIDATION_BUTTON_TIMEOUT = 45  # Tiempo máximo para esperar el botón "Validando..."
+LOGIN_TIMEOUT_SECONDS = 120      # Aumentado para dar más tiempo
+MAX_LOGIN_ATTEMPTS = 3
+VALIDATION_BUTTON_TIMEOUT = 60   # Aumentado
+
+def random_delay(min_seconds=0.5, max_seconds=2.0):
+    """Genera delays aleatorios para simular comportamiento humano"""
+    time.sleep(random.uniform(min_seconds, max_seconds))
+
+def move_mouse_naturally(driver, element):
+    """Simula movimientos naturales del mouse hacia un elemento"""
+    try:
+        actions = ActionChains(driver)
+        # Movimiento con curvas bezier para parecer más humano
+        actions.move_to_element_with_offset(element, 5, 5)
+        actions.pause(random.uniform(0.1, 0.3))
+        actions.move_to_element(element)
+        actions.perform()
+        random_delay(0.1, 0.3)
+    except:
+        pass
+
+def type_like_human(element, text):
+    """Escribe texto con velocidad variable como un humano"""
+    element.clear()
+    for char in text:
+        element.send_keys(char)
+        time.sleep(random.uniform(0.05, 0.15))  # Velocidad variable entre caracteres
 
 def inicializar_navegador(headless=True):
     """
-    ✅ FUNCIÓN MEJORADA: Inicializa el navegador con una configuración headless simplificada para el servidor.
+    Inicializa el navegador con configuración anti-detección mejorada
     """
     options = uc.ChromeOptions()
     
-    # ✅ CAMBIO APLICADO: Simplificamos el bloque headless para probar un perfil más limpio.
+    # Configuración específica para Cloud Run
     if headless:
-        # Dejamos solo las opciones más importantes y probadas para entornos de servidor.
-        # Un perfil más simple puede ser menos sospechoso.
+        # Usar el nuevo modo headless que es menos detectable
         options.add_argument("--headless=new")
+        # Configuración esencial para Cloud Run
         options.add_argument('--no-sandbox')
-        options.add_argument('--disable-gpu')
         options.add_argument('--disable-dev-shm-usage')
+        # Desactivar características que delatan automatización
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
     
-    # Se mantienen el resto de tus opciones de configuración para robustez
-    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36')
-    options.add_argument('--lang=es-ES')
-    options.add_argument("--window-size=1920,1080")
+    # User agent actualizado y más realista
+    user_agents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ]
+    options.add_argument(f'user-agent={random.choice(user_agents)}')
+    
+    # Configuración adicional para parecer más real
+    options.add_argument('--lang=es-ES,es;q=0.9')
+    options.add_argument(f"--window-size={random.randint(1366, 1920)},{random.randint(768, 1080)}")
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-popup-blocking")
-    options.add_argument("--disable-extensions")
-    options.add_argument("--disable-setuid-sandbox")
-    options.add_argument("--remote-debugging-port=9222")
-    options.add_argument("--no-first-run")
-    options.add_argument("--no-default-browser-check")
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--disable-infobars")
-    options.add_argument("--disable-browser-side-navigation")
-    options.add_argument("--dns-prefetch-disable")
-    options.add_argument("--log-level=1")
-    options.add_argument("--disable-software-rasterizer")
+    
+    # Preferencias para evitar detección
+    prefs = {
+        "credentials_enable_service": False,
+        "profile.password_manager_enabled": False,
+        "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+        "webrtc.multiple_routes_enabled": False,
+        "webrtc.nonproxied_udp_enabled": False
+    }
+    options.add_experimental_option("prefs", prefs)
+    
+    # Agregar extensiones ficticias para parecer navegador real
+    options.add_argument('--load-extension=' + ','.join([
+        '/tmp/fake_extension_1',
+        '/tmp/fake_extension_2'
+    ]))
     
     try:
-        logger.info("===== Inicializando con Undetected Chromedriver (Configuración Simplificada para Servidor) =====")
-        # Pasamos headless=True para que uc.Chrome sepa el modo, pero las opciones ya están configuradas.
-        driver = uc.Chrome(options=options, headless=headless)
-        logger.info("Navegador (undetected) inicializado correctamente.")
+        logger.info("===== Inicializando navegador con protección anti-detección avanzada =====")
+        # Versión específica de Chrome si es necesario
+        driver = uc.Chrome(options=options, version_main=120)
+        
+        # Inyectar JavaScript para ocultar propiedades de automatización
+        stealth_js = """
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined
+        });
+        
+        Object.defineProperty(navigator, 'plugins', {
+            get: () => [1, 2, 3, 4, 5]
+        });
+        
+        Object.defineProperty(navigator, 'languages', {
+            get: () => ['es-ES', 'es', 'en']
+        });
+        
+        window.chrome = {
+            runtime: {},
+            loadTimes: function() {},
+            csi: function() {},
+            app: {}
+        };
+        
+        Object.defineProperty(navigator, 'permissions', {
+            get: () => ({
+                query: () => Promise.resolve({ state: 'granted' })
+            })
+        });
+        """
+        driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+            'source': stealth_js
+        })
+        
+        # Configurar viewport para evitar detección
+        driver.execute_cdp_cmd('Emulation.setDeviceMetricsOverride', {
+            'width': random.randint(1366, 1920),
+            'height': random.randint(768, 1080),
+            'deviceScaleFactor': 1,
+            'mobile': False
+        })
+        
+        logger.info("Navegador inicializado con todas las protecciones activadas")
         return driver
+        
     except Exception as e:
-        logger.error(f"Error al inicializar el navegador (undetected): {e}")
+        logger.error(f"Error al inicializar el navegador: {e}")
         return None
+
+def wait_for_validation_button(driver, timeout=60):
+    """
+    Espera inteligente para el botón de validación con verificaciones adicionales
+    """
+    logger.info("Esperando a que se complete la validación de identidad...")
+    start_time = time.time()
+    
+    while time.time() - start_time < timeout:
+        try:
+            # Buscar el botón en sus diferentes estados
+            buttons = driver.find_elements(By.XPATH, 
+                "//button[contains(@class, 'btn') and (contains(., 'Validando') or contains(., 'Siguiente'))]"
+            )
+            
+            for button in buttons:
+                button_text = button.text.strip()
+                button_class = button.get_attribute('class')
+                
+                # Verificar si el botón está habilitado y tiene el texto correcto
+                if 'Siguiente' in button_text and 'disabled' not in button_class:
+                    logger.info(f"✅ Botón habilitado detectado: '{button_text}'")
+                    # Simular comportamiento humano antes de hacer clic
+                    move_mouse_naturally(driver, button)
+                    random_delay(0.5, 1.0)
+                    return button
+                elif 'Validando' in button_text:
+                    logger.debug(f"Botón aún validando: '{button_text}'")
+            
+            # Pequeña pausa antes de verificar nuevamente
+            time.sleep(0.5)
+            
+        except Exception as e:
+            logger.debug(f"Error durante la espera: {e}")
+    
+    raise TimeoutException(f"Timeout esperando el botón de validación después de {timeout} segundos")
 
 def login_difarmer(headless=True):
     """
-    Realiza el proceso de login conservando tu lógica de búsqueda de elementos,
-    pero adaptada para el nuevo botón de validación.
+    Realiza el proceso de login con comportamiento más humano
     """
     for intento in range(1, MAX_LOGIN_ATTEMPTS + 1):
-        logger.info(f"🚀 Iniciando intento de login #{intento}/{MAX_LOGIN_ATTEMPTS}")
-        start_time = time.time()
+        logger.info(f"🚀 Intento de login #{intento}/{MAX_LOGIN_ATTEMPTS}")
         driver = None
         
         try:
             driver = inicializar_navegador(headless=headless)
             if not driver:
-                logger.error("No se pudo inicializar el navegador. Reintentando...")
                 continue
-
+            
+            # Navegar a la página con delay aleatorio
+            logger.info("Navegando a Difarmer...")
             driver.get(BASE_URL)
-            time.sleep(3)
-
+            random_delay(2, 4)  # Espera más natural
+            
+            # Simular scroll aleatorio como usuario real
+            driver.execute_script(f"window.scrollTo(0, {random.randint(100, 300)});")
+            random_delay(0.5, 1)
+            driver.execute_script("window.scrollTo(0, 0);")
+            
+            # Buscar y hacer clic en el botón de login
             logger.info("Buscando botón 'Iniciar Sesion'...")
-            login_button = None
-            xpaths_login = [
-                "//button[contains(., 'Iniciar Sesion')]", "//a[contains(., 'Iniciar Sesion')]",
-                "//button[contains(., 'Iniciar Sesión')]", "//a[contains(., 'Iniciar Sesión')]",
-                "//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'iniciar sesion')]"
-            ]
-            for xpath in xpaths_login:
-                elementos = driver.find_elements(By.XPATH, xpath)
-                if elementos:
-                    login_button = elementos[0]
-                    logger.info(f"Botón 'Iniciar Sesion' encontrado con XPath: {xpath}")
-                    break
-            
-            if not login_button:
-                css_selectors = [
-                    ".btn-primary", ".btn-login", ".login-button", 
-                    "button.blue-button", ".difarmer-login-button"
-                ]
-                for selector in css_selectors:
-                    elementos = driver.find_elements(By.CSS_SELECTOR, selector)
-                    if elementos:
-                        login_button = elementos[0]
-                        logger.info(f"Botón 'Iniciar Sesion' encontrado con selector CSS: {selector}")
-                        break
-            
-            if login_button:
-                driver.execute_script("arguments[0].click();", login_button)
-                logger.info("Clic en 'Iniciar Sesion' realizado con JavaScript.")
-                time.sleep(2)
-            else:
-                raise Exception("No se encontró el botón principal de 'Iniciar Sesion'")
-
-            logger.info("Buscando y rellenando credenciales...")
-            usuario_input = None
-            username_selectors = [
-                "input[placeholder='Usuario']", "input[name='username']", "input[id='user']",
-                "input[id='username']", "input[id='email']", "input.username-field"
-            ]
-            for selector in username_selectors:
-                elementos = driver.find_elements(By.CSS_SELECTOR, selector)
-                if elementos and elementos[0].is_displayed():
-                    usuario_input = elementos[0]
-                    logger.info(f"Campo de usuario encontrado con selector: {selector}")
-                    break
-            
-            if not usuario_input:
-                xpath_username = [
-                    "//label[text()='Usuario']/following::input[1]",
-                    "//div[text()='Usuario']/following::input[1]",
-                    "//label[contains(text(), 'Usuario')]/following::input[1]"
-                ]
-                for xpath in xpath_username:
-                    try:
-                        elementos = driver.find_elements(By.XPATH, xpath)
-                        if elementos and elementos[0].is_displayed():
-                            usuario_input = elementos[0]
-                            logger.info(f"Campo de usuario encontrado con XPath: {xpath}")
-                            break
-                    except: pass
-            
-            if not usuario_input: raise Exception("No se pudo encontrar el campo de usuario con ninguna estrategia.")
-            usuario_input.clear()
-            usuario_input.send_keys(USERNAME)
-            
-            password_input = driver.find_element(By.CSS_SELECTOR, "input[type='password']")
-            password_input.clear()
-            password_input.send_keys(PASSWORD)
-            logger.info("Credenciales ingresadas.")
-
-            # ✅ CAMBIO CLAVE: Ahora esperamos a que el texto "Siguiente" aparezca en el botón.
-            logger.info(f"Esperando hasta {VALIDATION_BUTTON_TIMEOUT}s a que el botón cambie a 'Siguiente'...")
-            validation_button_xpath = "//button[contains(., 'Validando identidad...') or contains(., 'Siguiente')]"
-            
-            wait = WebDriverWait(driver, VALIDATION_BUTTON_TIMEOUT)
-            
-            # Esta es la nueva condición, mucho más precisa.
-            wait.until(
-                EC.text_to_be_present_in_element((By.XPATH, validation_button_xpath), 'Siguiente')
+            login_button = WebDriverWait(driver, 20).until(
+                EC.element_to_be_clickable((By.XPATH, 
+                    "//button[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'iniciar ses')]"
+                ))
             )
             
-            # Una vez que el texto aparece, encontramos el botón y hacemos clic.
-            siguiente_button = driver.find_element(By.XPATH, validation_button_xpath)
-            logger.info("✅ Botón 'Siguiente' encontrado. Procediendo con el clic.")
+            # Mover mouse naturalmente y hacer clic
+            move_mouse_naturally(driver, login_button)
+            login_button.click()
+            random_delay(1, 2)
+            
+            # Esperar a que aparezcan los campos de login
+            logger.info("Esperando formulario de login...")
+            usuario_input = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 
+                    "input[placeholder*='Usuario'], input[name*='user'], input[id*='user']"
+                ))
+            )
+            
+            # Ingresar credenciales con comportamiento humano
+            logger.info("Ingresando credenciales...")
+            move_mouse_naturally(driver, usuario_input)
+            usuario_input.click()
+            random_delay(0.3, 0.7)
+            type_like_human(usuario_input, USERNAME)
+            
+            # Buscar campo de contraseña
+            password_input = driver.find_element(By.CSS_SELECTOR, "input[type='password']")
+            move_mouse_naturally(driver, password_input)
+            password_input.click()
+            random_delay(0.3, 0.7)
+            type_like_human(password_input, PASSWORD)
+            
+            # Esperar un momento antes de buscar el botón
+            random_delay(1, 2)
+            
+            # Esperar a que el botón de validación esté listo
+            siguiente_button = wait_for_validation_button(driver, VALIDATION_BUTTON_TIMEOUT)
+            
+            # Hacer clic con comportamiento natural
+            driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", siguiente_button)
+            random_delay(0.5, 1)
             siguiente_button.click()
-            time.sleep(7)
-
-            logger.info("Verificando el resultado del login...")
-            page_source_lower = driver.page_source.lower()
+            
+            # Esperar respuesta del servidor
+            logger.info("Esperando respuesta del login...")
+            random_delay(5, 8)
+            
+            # Verificar éxito del login
             success_indicators = [
-                "mi cuenta" in page_source_lower, "cerrar sesión" in page_source_lower,
-                "logout" in page_source_lower, "mi perfil" in page_source_lower,
-                "bienvenido" in page_source_lower, "captura de pedidos" in page_source_lower,
-                "carrito" in page_source_lower,
-                bool(driver.find_elements(By.CSS_SELECTOR, ".user-profile, .logout-button, a[href*='logout'], .welcome-user, .user-menu"))
+                "mi cuenta", "cerrar sesión", "logout", "mi perfil",
+                "bienvenido", "captura de pedidos", "carrito"
             ]
-            if any(success_indicators):
-                logger.info("🎉 ¡LOGIN EXITOSO EN DIFARMER!")
+            
+            page_text = driver.page_source.lower()
+            if any(indicator in page_text for indicator in success_indicators):
+                logger.info("🎉 ¡LOGIN EXITOSO!")
+                # Pequeña navegación adicional para confirmar
+                random_delay(1, 2)
                 return driver
             else:
-                raise Exception("Login fallido. No se encontraron indicadores de éxito post-login.")
-
+                raise Exception("No se detectaron indicadores de login exitoso")
+                
         except Exception as e:
-            logger.error(f"❌ Error en el intento de login #{intento}: {e}")
+            logger.error(f"❌ Error en intento #{intento}: {str(e)}")
             if driver:
-                driver.save_screenshot(f"error_intento_{intento}.png")
+                # Guardar screenshot para debugging
+                try:
+                    driver.save_screenshot(f"error_login_intento_{intento}.png")
+                    with open(f"page_source_intento_{intento}.html", "w") as f:
+                        f.write(driver.page_source)
+                except:
+                    pass
                 driver.quit()
             
-            if time.time() - start_time > LOGIN_TIMEOUT_SECONDS:
-                logger.error("Timeout global alcanzado. Abortando reintentos.")
-                break
-            
             if intento < MAX_LOGIN_ATTEMPTS:
-                logger.info("Esperando 5 segundos antes del siguiente intento...")
-                time.sleep(5)
-
-    logger.error(f"🚫 Login en Difarmer fallido después de {MAX_LOGIN_ATTEMPTS} intentos.")
+                wait_time = random.uniform(5, 10)
+                logger.info(f"Esperando {wait_time:.1f} segundos antes del siguiente intento...")
+                time.sleep(wait_time)
+    
+    logger.error("🚫 Login fallido después de todos los intentos")
     return None
+
+# Función auxiliar para testing
+def test_login():
+    """Función de prueba para verificar el login"""
+    # Primero probar en modo visible para debugging
+    logger.info("=== PRUEBA EN MODO VISIBLE ===")
+    driver = login_difarmer(headless=False)
+    if driver:
+        logger.info("✅ Login exitoso en modo visible")
+        driver.quit()
+    
+    # Luego probar en modo headless
+    logger.info("\n=== PRUEBA EN MODO HEADLESS ===")
+    driver = login_difarmer(headless=True)
+    if driver:
+        logger.info("✅ Login exitoso en modo headless")
+        driver.quit()
+
+if __name__ == "__main__":
+    test_login()
