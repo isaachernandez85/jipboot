@@ -122,9 +122,9 @@ echo "🎯 Arrancando servidor uvicorn..."
 echo "=========================================="
 
 # Ejecutar uvicorn con configuración optimizada
-exec uvicorn main:app \
-    --host 0.0.0.0 \
-    --port $PORT \
-    --workers 1 \
-    --loop asyncio \
-    --log-level info
+   exec uvicorn main:app \
+       --host 0.0.0.0 \
+       --port $PORT \
+       --workers 1 \
+       --loop asyncio \
+       --log-level info
