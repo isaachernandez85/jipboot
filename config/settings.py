@@ -23,7 +23,7 @@ load_dotenv()
 # Configuración de Gemini (IA)
 # --------------------------------------------------
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL   = os.getenv("GEMINI_MODEL", "models/gemini-1.5-pro-latest") 
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # ✅ Instrucciones de contexto para Gemini - ACTUALIZADAS
 GEMINI_SYSTEM_INSTRUCTIONS = """
