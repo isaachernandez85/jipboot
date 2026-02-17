@@ -127,5 +127,4 @@ exec uvicorn main:app \
     --port $PORT \
     --workers 1 \
     --loop asyncio \
-    --log-level info \
-    --access-log
+    --log-level info
