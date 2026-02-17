@@ -44,13 +44,14 @@ RUN sed -i '/es_MX.UTF-8/s/^# //g' /etc/locale.gen && \
 ENV LANG=es_MX.UTF-8 \
     LANGUAGE=es_MX:es \
     LC_ALL=es_MX.UTF-8
-# Descargar e instalar Google Chrome
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
+# Descargar e instalar Google Chrome (método actualizado sin apt-key)
+RUN wget -q -O /tmp/google-chrome-key.pub https://dl-ssl.google.com/linux/linux_signing_key.pub \
+    && gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg /tmp/google-chrome-key.pub \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
     && apt-get install -y google-chrome-stable \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /tmp/google-chrome-key.pub
 # Verificar instalación de Chrome
 RUN google-chrome --version
 # Crear directorio de trabajo
