@@ -121,7 +121,7 @@ ulimit -u 2048
 echo "🎯 Arrancando servidor uvicorn..."
 echo "=========================================="
 
-# Ejecutar uvicorn con configuración optimizada
+# Ejecutar uvicorn con configuración optimizadaaa
    exec uvicorn main:app \
        --host 0.0.0.0 \
        --port $PORT \
